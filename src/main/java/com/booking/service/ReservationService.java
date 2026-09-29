@@ -4,6 +4,7 @@ import com.booking.dto.request.ReservationRequest;
 import com.booking.dto.request.ReservationUpdateRequest;
 import com.booking.dto.response.ReservationResponse;
 import com.booking.exception.BadRequestException;
+import com.booking.exception.ReservationConflictException;
 import com.booking.exception.ResourceNotFoundException;
 import com.booking.model.*;
 import com.booking.repository.ReservationRepository;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Service
 public class ReservationService {
@@ -34,6 +36,12 @@ public class ReservationService {
         this.userRepository = userRepository;
     }
 
+    private void validateTimeRange(LocalDateTime start, LocalDateTime end) {
+        if (start.isAfter(end) || start.isEqual(end)) {
+            throw new BadRequestException("Start time must be before end time");
+        }
+    }
+
     @Transactional
     public ReservationResponse createReservation(ReservationRequest request, String username) {
         User user = userRepository.findByUsername(username)
@@ -43,10 +51,15 @@ public class ReservationService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Resource", "id", request.getResourceId()));
 
-        // Validate start time is before end time
-        if (request.getStartTime().isAfter(request.getEndTime()) ||
-                request.getStartTime().isEqual(request.getEndTime())) {
-            throw new BadRequestException("Start time must be before end time");
+        if (!resource.getAvailable()) {
+            throw new BadRequestException("Resource is not available for reservation");
+        }
+
+        validateTimeRange(request.getStartTime(), request.getEndTime());
+
+        if (reservationRepository.existsByResourceIdAndStatusNotAndStartTimeLessThanAndEndTimeGreaterThan(
+                resource.getId(), ReservationStatus.CANCELLED, request.getEndTime(), request.getStartTime())) {
+            throw new ReservationConflictException("Resource is already reserved for the given time slot");
         }
 
         Reservation reservation = Reservation.builder()
@@ -126,13 +139,8 @@ public class ReservationService {
             reservation.setPrice(request.getPrice());
         }
 
-        // Validate start/end times after update
-        if (reservation.getStatus() != ReservationStatus.CANCELLED) {
-            if (reservation.getStartTime().isAfter(reservation.getEndTime()) ||
-                    reservation.getStartTime().isEqual(reservation.getEndTime())) {
-                throw new BadRequestException("Start time must be before end time");
-            }
-        }
+        // Always validate start < end regardless of status
+        validateTimeRange(reservation.getStartTime(), reservation.getEndTime());
 
         Reservation updated = reservationRepository.save(reservation);
         return mapToResponse(updated);
