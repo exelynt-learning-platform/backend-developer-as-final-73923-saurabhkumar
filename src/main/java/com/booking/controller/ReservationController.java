@@ -15,6 +15,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -42,21 +45,14 @@ public class ReservationController {
             @RequestParam(required = false) BigDecimal minPrice,
             @Parameter(description = "Filter by maximum price")
             @RequestParam(required = false) BigDecimal maxPrice,
-            @PageableDefault(size = 10) Pageable pageable) {
+            @PageableDefault(size = 10) Pageable pageable,
+            Authentication authentication) {
 
-        if (pageable.getSort().isSorted()) {
-            java.util.List<String> allowedSorts = java.util.Arrays.asList(
-                    "price", "startTime", "endTime", "status", "createdAt", "updatedAt", "id"
-            );
-            for (org.springframework.data.domain.Sort.Order order : pageable.getSort()) {
-                if (!allowedSorts.contains(order.getProperty())) {
-                    throw new com.booking.exception.BadRequestException("Invalid sort property: " + order.getProperty());
-                }
-            }
-        }
+        boolean isAdmin = isAdmin(authentication);
+        String username = authentication.getName();
 
         Page<ReservationResponse> reservations = reservationService.getReservations(
-                status, minPrice, maxPrice, pageable);
+                status, minPrice, maxPrice, username, isAdmin, pageable);
 
         return ResponseEntity.ok(reservations);
     }
@@ -64,16 +60,23 @@ public class ReservationController {
     @GetMapping("/{id}")
     @Operation(summary = "Get reservation by ID",
             description = "Get a single reservation. ADMIN can access any, USER can access only their own.")
-    public ResponseEntity<ReservationResponse> getReservationById(@PathVariable Long id) {
-        return ResponseEntity.ok(reservationService.getReservationById(id));
+    public ResponseEntity<ReservationResponse> getReservationById(
+            @PathVariable Long id,
+            Authentication authentication) {
+        boolean isAdmin = isAdmin(authentication);
+        String username = authentication.getName();
+        return ResponseEntity.ok(
+                reservationService.getReservationById(id, username, isAdmin));
     }
 
     @PostMapping
     @Operation(summary = "Create reservation",
             description = "Create a new reservation. User identity is taken from JWT token.")
     public ResponseEntity<ReservationResponse> createReservation(
-            @Valid @RequestBody ReservationRequest request) {
-        ReservationResponse response = reservationService.createReservation(request);
+            @Valid @RequestBody ReservationRequest request,
+            Authentication authentication) {
+        String username = authentication.getName();
+        ReservationResponse response = reservationService.createReservation(request, username);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
@@ -82,14 +85,24 @@ public class ReservationController {
             description = "Update a reservation. ADMIN can update any, USER can update only their own.")
     public ResponseEntity<ReservationResponse> updateReservation(
             @PathVariable Long id,
-            @Valid @RequestBody ReservationUpdateRequest request) {
-        return ResponseEntity.ok(reservationService.updateReservation(id, request));
+            @Valid @RequestBody ReservationUpdateRequest request,
+            Authentication authentication) {
+        boolean isAdmin = isAdmin(authentication);
+        String username = authentication.getName();
+        return ResponseEntity.ok(
+                reservationService.updateReservation(id, request, username, isAdmin));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Delete reservation", description = "Delete a reservation (ADMIN only)")
     public ResponseEntity<Void> deleteReservation(@PathVariable Long id) {
         reservationService.deleteReservation(id);
         return ResponseEntity.noContent().build();
+    }
+
+    private boolean isAdmin(Authentication authentication) {
+        return authentication.getAuthorities()
+                .contains(new SimpleGrantedAuthority("ROLE_ADMIN"));
     }
 }

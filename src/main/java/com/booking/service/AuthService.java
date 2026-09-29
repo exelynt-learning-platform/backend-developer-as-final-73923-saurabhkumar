@@ -28,23 +28,25 @@ public class AuthService {
     }
 
     public AuthResponse login(LoginRequest loginRequest) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        loginRequest.getUsername(),
-                        loginRequest.getPassword()));
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            loginRequest.getUsername(),
+                            loginRequest.getPassword()));
 
-        String token = jwtTokenProvider.generateToken(authentication);
+            String token = jwtTokenProvider.generateToken(authentication);
 
-        String role = authentication.getAuthorities().stream()
-                .findFirst()
-                .map(grantedAuthority -> grantedAuthority.getAuthority().replace("ROLE_", ""))
-                .orElse("USER");
+            User user = userRepository.findByUsername(loginRequest.getUsername())
+                    .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
 
-        return AuthResponse.builder()
-                .token(token)
-                .tokenType("Bearer")
-                .username(authentication.getName())
-                .role(role)
-                .build();
+            return AuthResponse.builder()
+                    .token(token)
+                    .tokenType("Bearer")
+                    .username(user.getUsername())
+                    .role(user.getRole().name())
+                    .build();
+        } catch (AuthenticationException e) {
+            throw new BadCredentialsException("Invalid username or password");
+        }
     }
 }

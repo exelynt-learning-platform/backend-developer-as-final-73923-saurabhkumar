@@ -44,9 +44,6 @@ public class Reservation {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @Version
-    private Long version;
-
     public Reservation() {}
 
     public Reservation(Long id, User user, Resource resource, LocalDateTime startTime,
