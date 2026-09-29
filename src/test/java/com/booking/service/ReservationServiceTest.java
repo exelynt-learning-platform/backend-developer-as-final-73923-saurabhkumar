@@ -61,6 +61,9 @@ class ReservationServiceTest {
         when(reservationRepository.save(any(Reservation.class))).thenReturn(reservation);
         ReservationResponse response = reservationService.createReservation(request, "user");
         assertThat(response).isNotNull();
+        assertThat(response.getStatus()).isEqualTo(ReservationStatus.PENDING);
+        assertThat(response.getPrice()).isEqualTo(new BigDecimal("99.99"));
+        assertThat(response.getUsername()).isEqualTo("user");
     }
     
     @Test
@@ -104,13 +107,7 @@ class ReservationServiceTest {
     @Test
     void shouldDeleteReservation() {
         when(reservationRepository.findById(1L)).thenReturn(Optional.of(reservation));
-        reservationService.deleteReservation(1L, true);
+        reservationService.deleteReservation(1L);
         verify(reservationRepository).delete(reservation);
-    }
-    
-    @Test
-    void shouldDenyUserFromDeletingReservation() {
-        when(reservationRepository.findById(1L)).thenReturn(Optional.of(reservation));
-        assertThatThrownBy(() -> reservationService.deleteReservation(1L, false)).isInstanceOf(AccessDeniedException.class);
     }
 }

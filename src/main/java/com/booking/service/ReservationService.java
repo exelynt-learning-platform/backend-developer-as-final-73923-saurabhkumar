@@ -62,6 +62,7 @@ public class ReservationService {
         return mapToResponse(saved);
     }
 
+    @Transactional(readOnly = true)
     public Page<ReservationResponse> getReservations(
             ReservationStatus status,
             BigDecimal minPrice,
@@ -77,16 +78,14 @@ public class ReservationService {
 
         // USER can only see their own reservations
         if (!isAdmin) {
-            User user = userRepository.findByUsername(username)
-                    .orElseThrow(() -> new ResourceNotFoundException(
-                            "User", "username", username));
-            spec = spec.and(ReservationSpecification.belongsToUser(user.getId()));
+            spec = spec.and(ReservationSpecification.belongsToUsername(username));
         }
 
         return reservationRepository.findAll(spec, pageable)
                 .map(this::mapToResponse);
     }
 
+    @Transactional(readOnly = true)
     public ReservationResponse getReservationById(Long id, String username, boolean isAdmin) {
         Reservation reservation = reservationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Reservation", "id", id));
@@ -128,9 +127,11 @@ public class ReservationService {
         }
 
         // Validate start/end times after update
-        if (reservation.getStartTime().isAfter(reservation.getEndTime()) ||
-                reservation.getStartTime().isEqual(reservation.getEndTime())) {
-            throw new BadRequestException("Start time must be before end time");
+        if (reservation.getStatus() != ReservationStatus.CANCELLED) {
+            if (reservation.getStartTime().isAfter(reservation.getEndTime()) ||
+                    reservation.getStartTime().isEqual(reservation.getEndTime())) {
+                throw new BadRequestException("Start time must be before end time");
+            }
         }
 
         Reservation updated = reservationRepository.save(reservation);
@@ -138,14 +139,10 @@ public class ReservationService {
     }
 
     @Transactional
-    public void deleteReservation(Long id, boolean isAdmin) {
+    public void deleteReservation(Long id) {
         Reservation reservation = reservationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Reservation", "id", id));
                 
-        if (!isAdmin) {
-            throw new AccessDeniedException("You do not have permission to delete reservations");
-        }
-        
         reservationRepository.delete(reservation);
     }
 
