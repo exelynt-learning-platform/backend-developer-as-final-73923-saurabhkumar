@@ -49,7 +49,7 @@ docker run -d --name mysql-booking \
 | `DB_NAME` | `booking_db` | Database name |
 | `DB_USER` | `root` | Database username |
 | `DB_PASSWORD` | `root` | Database password |
-| `JWT_SECRET` | (built-in) | Base64-encoded 256-bit HMAC key |
+| `JWT_SECRET` | **REQUIRED** | Base64-encoded 256-bit signing key for JWTs. App will fail to start if not provided. |
 | `JWT_EXPIRATION` | `86400000` | Token expiration in milliseconds (24h) |
 | `SERVER_PORT` | `8080` | Application port |
 

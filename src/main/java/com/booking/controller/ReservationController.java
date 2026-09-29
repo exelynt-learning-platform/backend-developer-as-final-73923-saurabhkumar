@@ -96,8 +96,9 @@ public class ReservationController {
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Delete reservation", description = "Delete a reservation (ADMIN only)")
-    public ResponseEntity<Void> deleteReservation(@PathVariable Long id) {
-        reservationService.deleteReservation(id);
+    public ResponseEntity<Void> deleteReservation(@PathVariable Long id, Authentication authentication) {
+        boolean isAdmin = isAdmin(authentication);
+        reservationService.deleteReservation(id, isAdmin);
         return ResponseEntity.noContent().build();
     }
 

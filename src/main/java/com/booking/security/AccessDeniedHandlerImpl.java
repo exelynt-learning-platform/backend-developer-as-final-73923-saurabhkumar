@@ -17,6 +17,12 @@ import java.time.LocalDateTime;
 @Component
 public class AccessDeniedHandlerImpl implements AccessDeniedHandler {
 
+    private final ObjectMapper objectMapper;
+
+    public AccessDeniedHandlerImpl(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
+
     @Override
     public void handle(HttpServletRequest request,
                        HttpServletResponse response,
@@ -32,8 +38,6 @@ public class AccessDeniedHandlerImpl implements AccessDeniedHandler {
                 .path(request.getRequestURI())
                 .build();
 
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(new JavaTimeModule());
-        mapper.writeValue(response.getOutputStream(), errorResponse);
+        objectMapper.writeValue(response.getOutputStream(), errorResponse);
     }
 }

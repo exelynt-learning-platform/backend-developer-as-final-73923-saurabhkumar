@@ -138,9 +138,14 @@ public class ReservationService {
     }
 
     @Transactional
-    public void deleteReservation(Long id) {
+    public void deleteReservation(Long id, boolean isAdmin) {
         Reservation reservation = reservationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Reservation", "id", id));
+                
+        if (!isAdmin) {
+            throw new AccessDeniedException("You do not have permission to delete reservations");
+        }
+        
         reservationRepository.delete(reservation);
     }
 
