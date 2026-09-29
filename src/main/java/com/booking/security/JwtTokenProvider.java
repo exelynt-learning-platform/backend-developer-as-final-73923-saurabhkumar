@@ -59,6 +59,7 @@ public class JwtTokenProvider {
         try {
             return getUsernameFromToken(token);
         } catch (JwtException | IllegalArgumentException e) {
+            org.slf4j.LoggerFactory.getLogger(JwtTokenProvider.class).trace("Invalid JWT token: {}", e.getMessage());
             return null;
         }
     }

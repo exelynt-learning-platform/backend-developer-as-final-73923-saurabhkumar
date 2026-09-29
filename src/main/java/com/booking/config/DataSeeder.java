@@ -5,12 +5,15 @@ import com.booking.repository.ResourceRepository;
 import com.booking.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 @Component
+@Profile("dev")
 @ConditionalOnProperty(name = "app.seed.enabled", havingValue = "true")
 public class DataSeeder implements CommandLineRunner {
 
@@ -19,6 +22,12 @@ public class DataSeeder implements CommandLineRunner {
     private final UserRepository userRepository;
     private final ResourceRepository resourceRepository;
     private final PasswordEncoder passwordEncoder;
+    
+    @Value("${app.seed.admin-password:admin123}")
+    private String adminPassword;
+
+    @Value("${app.seed.user-password:user123}")
+    private String userPassword;
 
     public DataSeeder(UserRepository userRepository,
                       ResourceRepository resourceRepository,
@@ -39,22 +48,22 @@ public class DataSeeder implements CommandLineRunner {
             User admin = User.builder()
                     .username("admin")
                     .email("admin@booking.com")
-                    .password(passwordEncoder.encode("admin123"))
+                    .password(passwordEncoder.encode(adminPassword))
                     .role(Role.ADMIN)
                     .build();
             userRepository.save(admin);
-            logger.info("Seeded ADMIN user: admin / admin123");
+            logger.info("Seeded ADMIN user: admin");
         }
 
         if (!userRepository.existsByUsername("user")) {
             User user = User.builder()
                     .username("user")
                     .email("user@booking.com")
-                    .password(passwordEncoder.encode("user123"))
+                    .password(passwordEncoder.encode(userPassword))
                     .role(Role.USER)
                     .build();
             userRepository.save(user);
-            logger.info("Seeded USER user: user / user123");
+            logger.info("Seeded USER user: user");
         }
     }
 

@@ -52,6 +52,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/resources/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/resources/**").hasRole("ADMIN")
                         // Reservation endpoints — service-level ownership checks
+                        // 1. Filter level: Enforces authenticated access for all, and ADMIN role for DELETE.
+                        // 2. Service level: ReservationService enforces data ownership (users can only see/edit their own).
                         .requestMatchers(HttpMethod.DELETE, "/api/reservations/**").hasRole("ADMIN")
                         .requestMatchers("/api/reservations/**").authenticated()
                         // Everything else

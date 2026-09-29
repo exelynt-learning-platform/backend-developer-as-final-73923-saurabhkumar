@@ -17,6 +17,12 @@ import java.time.LocalDateTime;
 @Component
 public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
+    private final ObjectMapper mapper;
+
+    public JwtAuthenticationEntryPoint(ObjectMapper mapper) {
+        this.mapper = mapper;
+    }
+
     @Override
     public void commence(HttpServletRequest request,
                          HttpServletResponse response,
@@ -32,8 +38,6 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
                 .path(request.getRequestURI())
                 .build();
 
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(new JavaTimeModule());
         mapper.writeValue(response.getOutputStream(), errorResponse);
     }
 }

@@ -15,14 +15,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
-
-import com.booking.security.SecurityUtils;
 
 @RestController
 @RequestMapping("/api/reservations")
@@ -47,8 +42,7 @@ public class ReservationController {
             @RequestParam(required = false) BigDecimal minPrice,
             @Parameter(description = "Filter by maximum price")
             @RequestParam(required = false) BigDecimal maxPrice,
-            @PageableDefault(size = 10) Pageable pageable,
-            Authentication authentication) {
+            @PageableDefault(size = 10) Pageable pageable) {
 
         if (pageable.getSort().isSorted()) {
             java.util.List<String> allowedSorts = java.util.Arrays.asList(
@@ -61,11 +55,8 @@ public class ReservationController {
             }
         }
 
-        boolean isAdmin = SecurityUtils.hasRole(authentication, "ROLE_ADMIN");
-        String username = authentication.getName();
-
         Page<ReservationResponse> reservations = reservationService.getReservations(
-                status, minPrice, maxPrice, username, isAdmin, pageable);
+                status, minPrice, maxPrice, pageable);
 
         return ResponseEntity.ok(reservations);
     }
@@ -73,23 +64,16 @@ public class ReservationController {
     @GetMapping("/{id}")
     @Operation(summary = "Get reservation by ID",
             description = "Get a single reservation. ADMIN can access any, USER can access only their own.")
-    public ResponseEntity<ReservationResponse> getReservationById(
-            @PathVariable Long id,
-            Authentication authentication) {
-        boolean isAdmin = SecurityUtils.hasRole(authentication, "ROLE_ADMIN");
-        String username = authentication.getName();
-        return ResponseEntity.ok(
-                reservationService.getReservationById(id, username, isAdmin));
+    public ResponseEntity<ReservationResponse> getReservationById(@PathVariable Long id) {
+        return ResponseEntity.ok(reservationService.getReservationById(id));
     }
 
     @PostMapping
     @Operation(summary = "Create reservation",
             description = "Create a new reservation. User identity is taken from JWT token.")
     public ResponseEntity<ReservationResponse> createReservation(
-            @Valid @RequestBody ReservationRequest request,
-            Authentication authentication) {
-        String username = authentication.getName();
-        ReservationResponse response = reservationService.createReservation(request, username);
+            @Valid @RequestBody ReservationRequest request) {
+        ReservationResponse response = reservationService.createReservation(request);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
@@ -98,12 +82,8 @@ public class ReservationController {
             description = "Update a reservation. ADMIN can update any, USER can update only their own.")
     public ResponseEntity<ReservationResponse> updateReservation(
             @PathVariable Long id,
-            @Valid @RequestBody ReservationUpdateRequest request,
-            Authentication authentication) {
-        boolean isAdmin = SecurityUtils.hasRole(authentication, "ROLE_ADMIN");
-        String username = authentication.getName();
-        return ResponseEntity.ok(
-                reservationService.updateReservation(id, request, username, isAdmin));
+            @Valid @RequestBody ReservationUpdateRequest request) {
+        return ResponseEntity.ok(reservationService.updateReservation(id, request));
     }
 
     @DeleteMapping("/{id}")

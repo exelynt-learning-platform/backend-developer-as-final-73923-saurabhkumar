@@ -42,6 +42,18 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.UNAUTHORIZED, "Invalid username or password", request);
     }
 
+    @ExceptionHandler(org.springframework.security.core.AuthenticationException.class)
+    public ResponseEntity<ApiErrorResponse> handleAuthenticationException(
+            org.springframework.security.core.AuthenticationException ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(org.springframework.orm.ObjectOptimisticLockingFailureException.class)
+    public ResponseEntity<ApiErrorResponse> handleOptimisticLocking(
+            org.springframework.orm.ObjectOptimisticLockingFailureException ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.CONFLICT, "The resource was updated by another transaction. Please try again.", request);
+    }
+
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiErrorResponse> handleAccessDenied(
             AccessDeniedException ex, HttpServletRequest request) {
