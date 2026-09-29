@@ -37,3 +37,17 @@ build/
 *.bak
 .DS_Store
 Thumbs.db
+
+### OS Files ###
+Thumbs.db
+.DS_Store
+
+### Logs & Temp ###
+*.log
+*.tmp
+*.bak
+
+### Secrets & Env ###
+.env
+*.pem
+*-secret.yml
