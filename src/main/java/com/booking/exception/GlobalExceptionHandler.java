@@ -75,8 +75,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponse> handleGeneral(
             Exception ex, HttpServletRequest request) {
+        // Log the full exception server-side
+        org.slf4j.LoggerFactory.getLogger(GlobalExceptionHandler.class)
+                .error("Unhandled exception processing request", ex);
+                
         return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR,
-                "An unexpected error occurred: " + ex.getMessage(), request);
+                "An unexpected error occurred. Please try again later.", request);
     }
 
     private ResponseEntity<ApiErrorResponse> buildResponse(

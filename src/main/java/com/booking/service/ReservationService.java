@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Service
 public class ReservationService {
@@ -43,7 +44,6 @@ public class ReservationService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Resource", "id", request.getResourceId()));
 
-        // Validate start time is before end time
         if (request.getStartTime().isAfter(request.getEndTime()) ||
                 request.getStartTime().isEqual(request.getEndTime())) {
             throw new BadRequestException("Start time must be before end time");
@@ -62,6 +62,7 @@ public class ReservationService {
         return mapToResponse(saved);
     }
 
+    @Transactional(readOnly = true)
     public Page<ReservationResponse> getReservations(
             ReservationStatus status,
             BigDecimal minPrice,
@@ -75,7 +76,6 @@ public class ReservationService {
                 .and(ReservationSpecification.hasMinPrice(minPrice))
                 .and(ReservationSpecification.hasMaxPrice(maxPrice));
 
-        // USER can only see their own reservations
         if (!isAdmin) {
             User user = userRepository.findByUsername(username)
                     .orElseThrow(() -> new ResourceNotFoundException(
@@ -87,15 +87,12 @@ public class ReservationService {
                 .map(this::mapToResponse);
     }
 
+    @Transactional(readOnly = true)
     public ReservationResponse getReservationById(Long id, String username, boolean isAdmin) {
         Reservation reservation = reservationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Reservation", "id", id));
 
-        // Check ownership for non-admin users
-        if (!isAdmin && !reservation.getUser().getUsername().equals(username)) {
-            throw new AccessDeniedException(
-                    "You don't have permission to access this reservation");
-        }
+        assertOwnership(reservation, username, isAdmin);
 
         return mapToResponse(reservation);
     }
@@ -108,10 +105,15 @@ public class ReservationService {
         Reservation reservation = reservationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Reservation", "id", id));
 
-        // Check ownership for non-admin users
-        if (!isAdmin && !reservation.getUser().getUsername().equals(username)) {
-            throw new AccessDeniedException(
-                    "You don't have permission to update this reservation");
+        assertOwnership(reservation, username, isAdmin);
+
+        // Pre-calculate new times for validation
+        LocalDateTime newStart = request.getStartTime() != null ? request.getStartTime() : reservation.getStartTime();
+        LocalDateTime newEnd = request.getEndTime() != null ? request.getEndTime() : reservation.getEndTime();
+
+        // Validate explicitly before mutating entity
+        if (newStart == null || newEnd == null || newStart.isAfter(newEnd) || newStart.isEqual(newEnd)) {
+            throw new BadRequestException("Start time must be before end time and neither can be null");
         }
 
         if (request.getStatus() != null) {
@@ -127,12 +129,6 @@ public class ReservationService {
             reservation.setPrice(request.getPrice());
         }
 
-        // Validate start/end times after update
-        if (reservation.getStartTime().isAfter(reservation.getEndTime()) ||
-                reservation.getStartTime().isEqual(reservation.getEndTime())) {
-            throw new BadRequestException("Start time must be before end time");
-        }
-
         Reservation updated = reservationRepository.save(reservation);
         return mapToResponse(updated);
     }
@@ -142,6 +138,13 @@ public class ReservationService {
         Reservation reservation = reservationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Reservation", "id", id));
         reservationRepository.delete(reservation);
+    }
+
+    private void assertOwnership(Reservation reservation, String username, boolean isAdmin) {
+        if (!isAdmin && !reservation.getUser().getUsername().equals(username)) {
+            throw new AccessDeniedException(
+                    "You don't have permission to access or modify this reservation");
+        }
     }
 
     private ReservationResponse mapToResponse(Reservation reservation) {

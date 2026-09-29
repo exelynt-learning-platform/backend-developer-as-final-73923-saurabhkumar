@@ -52,6 +52,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/resources/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/resources/**").hasRole("ADMIN")
                         // Reservation endpoints — service-level ownership checks
+                        .requestMatchers(HttpMethod.DELETE, "/api/reservations/**").hasRole("ADMIN")
                         .requestMatchers("/api/reservations/**").authenticated()
                         // Everything else
                         .anyRequest().authenticated())

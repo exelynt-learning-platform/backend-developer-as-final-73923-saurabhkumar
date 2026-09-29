@@ -22,6 +22,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 
+import com.booking.security.SecurityUtils;
+
 @RestController
 @RequestMapping("/api/reservations")
 @Tag(name = "Reservations", description = "Reservation management endpoints")
@@ -48,7 +50,7 @@ public class ReservationController {
             @PageableDefault(size = 10) Pageable pageable,
             Authentication authentication) {
 
-        boolean isAdmin = isAdmin(authentication);
+        boolean isAdmin = SecurityUtils.hasRole(authentication, "ROLE_ADMIN");
         String username = authentication.getName();
 
         Page<ReservationResponse> reservations = reservationService.getReservations(
@@ -63,7 +65,7 @@ public class ReservationController {
     public ResponseEntity<ReservationResponse> getReservationById(
             @PathVariable Long id,
             Authentication authentication) {
-        boolean isAdmin = isAdmin(authentication);
+        boolean isAdmin = SecurityUtils.hasRole(authentication, "ROLE_ADMIN");
         String username = authentication.getName();
         return ResponseEntity.ok(
                 reservationService.getReservationById(id, username, isAdmin));
@@ -87,22 +89,16 @@ public class ReservationController {
             @PathVariable Long id,
             @Valid @RequestBody ReservationUpdateRequest request,
             Authentication authentication) {
-        boolean isAdmin = isAdmin(authentication);
+        boolean isAdmin = SecurityUtils.hasRole(authentication, "ROLE_ADMIN");
         String username = authentication.getName();
         return ResponseEntity.ok(
                 reservationService.updateReservation(id, request, username, isAdmin));
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Delete reservation", description = "Delete a reservation (ADMIN only)")
     public ResponseEntity<Void> deleteReservation(@PathVariable Long id) {
         reservationService.deleteReservation(id);
         return ResponseEntity.noContent().build();
-    }
-
-    private boolean isAdmin(Authentication authentication) {
-        return authentication.getAuthorities()
-                .contains(new SimpleGrantedAuthority("ROLE_ADMIN"));
     }
 }

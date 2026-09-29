@@ -52,15 +52,15 @@ public class JwtTokenProvider {
                 .getSubject();
     }
 
-    public boolean validateToken(String token) {
+    public String validateAndGetUsername(String token) {
         try {
-            Jwts.parser()
-                    .verifyWith(key)
-                    .build()
-                    .parseSignedClaims(token);
-            return true;
+            return getUsernameFromToken(token);
         } catch (JwtException | IllegalArgumentException e) {
-            return false;
+            return null;
         }
+    }
+
+    public boolean validateToken(String token) {
+        return validateAndGetUsername(token) != null;
     }
 }
