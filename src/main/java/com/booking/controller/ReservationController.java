@@ -50,6 +50,17 @@ public class ReservationController {
             @PageableDefault(size = 10) Pageable pageable,
             Authentication authentication) {
 
+        if (pageable.getSort().isSorted()) {
+            java.util.List<String> allowedSorts = java.util.Arrays.asList(
+                    "price", "startTime", "endTime", "status", "createdAt", "updatedAt", "id"
+            );
+            for (org.springframework.data.domain.Sort.Order order : pageable.getSort()) {
+                if (!allowedSorts.contains(order.getProperty())) {
+                    throw new com.booking.exception.BadRequestException("Invalid sort property: " + order.getProperty());
+                }
+            }
+        }
+
         boolean isAdmin = SecurityUtils.hasRole(authentication, "ROLE_ADMIN");
         String username = authentication.getName();
 

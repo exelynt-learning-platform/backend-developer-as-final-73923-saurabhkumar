@@ -12,8 +12,8 @@ public class SecurityUtils {
 
     public static boolean hasRole(Authentication authentication, String role) {
         if (authentication == null) return false;
-        return authentication.getAuthorities()
-                .contains(new SimpleGrantedAuthority(role));
+        return authentication.getAuthorities().stream()
+                .anyMatch(a -> role.equals(a.getAuthority()));
     }
 
     public static boolean hasRole(String role) {

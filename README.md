@@ -74,16 +74,9 @@ mvn test
 
 Tests use an embedded H2 database — no MySQL required.
 
-## Seed Users
+## Seed Data
 
-The application automatically creates these test users on startup:
-
-| Username | Password | Role |
-|---|---|---|
-| `admin` | `admin123` | ADMIN |
-| `user` | `user123` | USER |
-
-3 sample resources are also seeded: Conference Room A (ROOM), Company Van (VEHICLE), Projector HD-500 (EQUIPMENT).
+By default, in non-production environments (when `app.seed.enabled=true`), the application automatically seeds sample resources and roles. Do not use default credentials in production; they have been removed from the default properties for security.
 
 ## API Documentation
 
@@ -135,7 +128,7 @@ OpenAPI JSON: [http://localhost:8080/api-docs](http://localhost:8080/api-docs)
 ```bash
 curl -X POST http://localhost:8080/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username": "admin", "password": "admin123"}'
+  -d '{"username": "admin", "password": "your_secure_password"}'
 ```
 
 Response:

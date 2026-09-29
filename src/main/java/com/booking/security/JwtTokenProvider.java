@@ -21,6 +21,9 @@ public class JwtTokenProvider {
     public JwtTokenProvider(
             @Value("${app.jwt.secret}") String jwtSecret,
             @Value("${app.jwt.expiration}") long jwtExpiration) {
+        if (jwtSecret == null || jwtSecret.trim().isEmpty() || jwtSecret.startsWith("${")) {
+            throw new IllegalArgumentException("JWT_SECRET must be configured in environment");
+        }
         this.key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(jwtSecret));
         this.jwtExpiration = jwtExpiration;
     }

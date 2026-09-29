@@ -6,12 +6,16 @@ import jakarta.validation.constraints.DecimalMin;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import jakarta.validation.constraints.Future;
+
 public class ReservationUpdateRequest {
 
     private ReservationStatus status;
 
+    @Future(message = "Start time must be in the future")
     private LocalDateTime startTime;
 
+    @Future(message = "End time must be in the future")
     private LocalDateTime endTime;
 
     @DecimalMin(value = "0.0", inclusive = false, message = "Price must be greater than 0")
